@@ -77,44 +77,51 @@ with open('books.csv', 'w', newline='') as f:
 
 import sqlite3
 
-connect = sqlite3.connect('book.db')
-curs = connect.cursor()
-curs.execute('''CREATE TABLE book (title VARCHAR(20), author VARCHAR(20), year FLOAT)''')
-
-with open('books.csv') as f:
-    reader = csv.reader(f, delimiter=' ', quotechar='~')
-    next(reader)
-    for item in reader:
-        query = 'INSERT INTO book (title, author, year) VALUES(?,  ?,  ?)'
-        curs.execute(query, item)
-
-curs.execute("SELECT year FROM book")
-print(*curs.fetchall(), sep='\n')
-
-
-curs.execute("SELECT * FROM book ORDER BY year")
-print(*curs.fetchall(), sep='\n')
-print()
-
-curs.execute("SELECT * FROM book ORDER BY year DESC")
-print(*curs.fetchall(), sep='\n')
-curs.close()
-connect.close()
-
 try:
+    connect = sqlite3.connect('book.db')
+    curs = connect.cursor()
+    curs.execute('''CREATE TABLE book (title VARCHAR(20), author VARCHAR(20), year FLOAT)''')
 
-    import sqlalchemy as sa
+    with open('books.csv') as f:
+        reader = csv.reader(f, delimiter=' ', quotechar='~')
+        next(reader)
+        for item in reader:
+            query = 'INSERT INTO book (title, author, year) VALUES(?,  ?,  ?)'
+            curs.execute(query, item)
 
-    conn = sa.create_engine('sqlite:///book.db')
-    with conn.connect() as cursor:
-        query = 'select title from book order by year desc'
-        cursor.execute(query)
-        cursor.commit()
+    curs.execute("SELECT year FROM book")
+    print(*curs.fetchall(), sep='\n')
 
+    curs.execute("SELECT * FROM book ORDER BY year")
+    print(*curs.fetchall(), sep='\n')
+    print()
 
-except Exception as e:
+    curs.execute("SELECT * FROM book ORDER BY year DESC")
+    print(*curs.fetchall(), sep='\n')
+    curs.close()
+    connect.close()
+
+except BaseException as e:
     print(e)
 
 finally:
     import os
     os.remove('book.db')
+
+# try:
+
+#     import sqlalchemy as sa
+
+#     conn = sa.create_engine('sqlite:///book.db')
+#     with conn.connect() as cursor:
+#         query = 'select title from book order by year desc'
+#         cursor.execute(query)
+#         cursor.commit()
+
+
+# except Exception as e:
+#     print(e)
+
+# finally:
+#     import os
+#     os.remove('book.db')
