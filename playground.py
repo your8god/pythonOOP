@@ -240,3 +240,119 @@ class CaseHelper():
     @staticmethod
     def to_upper_camel(string):
         return ''.join(i.title() for i in string.split('_'))
+    
+
+
+from functools import singledispatchmethod
+
+class Processor:
+    @singledispatchmethod
+    @staticmethod
+    def process(obj):
+        raise TypeError("Аргумент переданного типа не поддерживается")
+    
+    @process.register(int)
+    @process.register(float)
+    @staticmethod
+    def int_float_process(obj):
+        return obj * 2
+    
+    @process.register(str)
+    @staticmethod
+    def str_process(obj):
+        return obj.upper()
+    
+    @process.register(list)
+    @staticmethod
+    def list_process(obj):
+        return sorted(obj)
+    
+    @process.register(tuple)
+    @staticmethod
+    def tuple_process(obj):
+        return tuple(sorted(obj))
+    
+
+class Negator:
+    @singledispatchmethod
+    @staticmethod
+    def neg(obj):
+        raise TypeError("Аргумент переданного типа не поддерживается")
+    
+    @neg.register(bool)
+    @staticmethod
+    def bneg(obj):
+        return not obj
+
+    @neg.register(int)
+    @neg.register(float)
+    @staticmethod
+    def ifn(obj):
+        return -obj
+    
+
+class Formatter:
+    @singledispatchmethod
+    @staticmethod
+    def format(obj):
+        raise TypeError("Аргумент переданного типа не поддерживается")
+    
+    @format.register(int)
+    @staticmethod
+    def _int_format(o):
+        print('Целое число:', o)
+
+    @format.register(float)
+    @staticmethod
+    def _float_format(o):
+        print('Вещественное число:', o)
+
+    @format.register(list)
+    @staticmethod
+    def _list_format(o):
+        print('Элементы списка:', ', '.join(map(repr, o)))
+
+    @format.register(tuple)
+    @staticmethod
+    def _tuple_format(o):
+        print('Элементы кортежа:', ', '.join(map(repr, o)))
+
+    @format.register(dict)
+    @staticmethod
+    def _dict_format(o):
+        print('Пары словаря:', ', '.join(f'({repr(k)}, {repr(v)})' for k, v in o.items()))
+
+
+
+from datetime import date
+
+
+class BirthInfo:
+    @singledispatchmethod
+    def __init__(self, o):
+        raise TypeError("Аргумент переданного типа не поддерживается")
+    
+    @__init__.register(date)
+    def _date__init(self, o):
+        self.birth_date = o
+
+    @__init__.register(str)
+    def _str__init(self, o):
+        try:
+            self.birth_date = date.fromisoformat(o)
+        except:
+            raise TypeError("Аргумент переданного типа не поддерживается")
+        
+    @__init__.register(list)
+    @__init__.register(tuple)
+    def _list_init(self, o):
+        try:
+            self.birth_date = date(*o)
+        except:
+            raise TypeError("Аргумент переданного типа не поддерживается")
+        
+    @property
+    def age(self):
+        age = date.today().year - self.birth_date.year - 1
+        age += (date.today().month, date.today().day) >= (self.birth_date.year.month, self.birth_date.year.day)
+        return age
