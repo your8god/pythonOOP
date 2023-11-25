@@ -15,6 +15,7 @@ class Config:
         self.loglevel = "verbose"
         self.version = "1.0.0"
 
+#####################################################################################################
 
 class Book:
     def __init__(self, title, author, year):
@@ -83,7 +84,7 @@ class PhoneNumber:
 class AnyClass:
     def __init__(self, **kwargs):
         self.__dict__ = {**self.__dict__, **kwargs}
-
+        
     def _join(self):
         return ', '.join(f"{k}={v!r}" for k, v in self.__dict__.items())
 
@@ -92,4 +93,94 @@ class AnyClass:
     
     def __repr__(self):
         return f"{self.__class__.__name__}({self._join()})"
-        
+    
+
+
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f'Vector{self.x, self.y}'
+    
+    def __eq__(self, other):
+        if isinstance(other, Vector):
+            return self.x == other.x and self.y == other.y
+        elif isinstance(other, tuple):
+            return (self.x, self.y) == other
+        return NotImplemented
+    
+
+from functools import total_ordering
+
+@total_ordering
+class Word:
+    def __init__(self, word):
+        self.word = word
+
+    def __repr__(self):
+        return f'Word({self.word!r})'
+    
+    def __str__(self):
+        return self.word.title()
+    
+    def __eq__(self, other):
+        if isinstance(other, Word):
+            return len(self.word) == len(other.word)
+        return NotImplemented
+    
+    def __lt__(self, other):
+        if isinstance(other, Word):
+            return len(self.word) < len(other.word)
+        return NotImplemented
+    
+
+@total_ordering
+class Month:
+    def __init__(self, y, m):
+        self.year = y
+        self.month = m
+
+    def __repr__(self):
+        return f'Month{self.year, self.month}'
+    
+    def __str__(self):
+        return f'{self.year}-{self.month}'
+    
+    def __eq__(self, other):
+        if isinstance(other, Month):
+            return self.year == other.year and self.month == other.month
+        elif isinstance(other, tuple):
+            return (self.year, self.month) == other
+        return NotImplemented
+    
+    def __lt__(self, other):
+        if isinstance(other, Month):
+            return (self.year, self.month) < (other.year, other.month)
+        elif isinstance(other, tuple):
+            return (self.year, self.month) < other
+        return NotImplemented
+    
+
+@total_ordering
+class Version:
+    def __init__(self, ver):
+        self.ver = list(map(int, ver.split('.')))
+        self.ver.extend((3 - len(self.ver)) * [0])
+
+    def __repr__(self):
+        return f'Version({".".join(str(i) for i in self.ver)!r})'
+    
+    def __str__(self):
+        return ".".join(str(i) for i in self.ver)
+    
+    def __eq__(self, other):
+        if isinstance(other, Version):
+            return self.ver == other.ver
+        return NotImplemented
+    
+    def __lt__(self, other):
+        if isinstance(other, Version):
+            return self.ver < other.ver
+        return NotImplemented
