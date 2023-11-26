@@ -184,3 +184,119 @@ class Version:
         if isinstance(other, Version):
             return self.ver < other.ver
         return NotImplemented
+    
+
+class ReversibleString:
+    def __init__(self, string):
+        self.string = string
+
+    def __pos__(self):
+        return ReversibleString(self.string)
+    
+    def __neg__(self):
+        return ReversibleString(self.string[::-1])
+    
+    def __str__(self):
+        return self.string
+    
+
+class Money:
+    def __init__(self, amount):
+        self.amount = amount
+
+    def __str__(self):
+        return f'{self.amount} руб.'
+    
+    def __pos__(self):
+        return Money(abs(self.amount))
+    
+    def __neg__(self):
+        return Money(-abs(self.amount))
+    
+
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return f'{self.x, self.y}'
+    
+    def __repr__(self):
+        return f'Vector{self.x, self.y}'
+    
+    def __pos__(self):
+        return Vector(self.x, self.y)
+    
+    def __neg__(self):
+        return Vector(-self.x, -self.y)
+    
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**0.5
+    
+
+class ColoredPoint:
+    def __init__(self, x, y, color=(0, 0, 0)):
+        self.x = x
+        self.y = y
+        self.color = color
+
+    def __repr__(self):
+        return f'ColoredPoint{self.x, self.y, self.color}'
+    
+    def __str__(self):
+        return f'{self.x, self.y}'
+    
+    def __pos__(self):
+        return ColoredPoint(self.x, self.y, self.color)
+    
+    def __neg__(self):
+        return ColoredPoint(-self.x, -self.y, self.color)
+    
+    def __invert__(self):
+        return ColoredPoint(self.y, self.x, tuple(map(lambda x: 255 - x, self.color)))
+    
+
+from copy import deepcopy
+
+class Matrix:
+    def __init__(self, row, col, value=0, mat=None):
+        self.rows = row
+        self.cols = col
+        self._mat = [[value] * col for _ in range(row)]
+        if not mat is None:
+           self._mat = mat
+
+    def __str__(self):
+        return '\n'.join([' '.join(str(i) for i in row) for row in self._mat])
+    
+    def __repr__(self):
+        return f'Matrix{self.rows, self.cols}'
+    
+    def get_value(self, row, col):
+        return self._mat[row][col]
+    
+    def set_value(self, row, col, val):
+        self._mat[row][col] = val
+
+    def __pos__(self):
+        return Matrix(self.rows, self.cols, mat=self._mat) 
+    
+    def __neg__(self):
+        copy_map = deepcopy(self._mat)
+        for i in range(len(copy_map)):
+            for j in range(len(copy_map[i])):
+               copy_map[i][j] *= -1
+        return Matrix(self.rows, self.cols, mat=copy_map)
+
+    def __invert__(self):
+        copy_map = deepcopy(self._mat)
+        copy_map = list(map(list, zip(*copy_map)))
+        return Matrix(self.cols, self.rows, mat=copy_map)
+    
+    def __round__(self, n=None):
+        copy_map = deepcopy(self._mat)
+        for i in range(len(copy_map)):
+            for j in range(len(copy_map[i])):
+                 copy_map[i][j] = round(copy_map[i][j], n)
+        return Matrix(self.rows, self.cols, mat=copy_map)
