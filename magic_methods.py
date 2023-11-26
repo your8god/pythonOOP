@@ -300,3 +300,109 @@ class Matrix:
             for j in range(len(copy_map[i])):
                  copy_map[i][j] = round(copy_map[i][j], n)
         return Matrix(self.rows, self.cols, mat=copy_map)
+    
+
+
+class FoodInfo:
+    def __init__(self, proteins, fats, carbohydrates):
+        self.proteins = proteins
+        self.fats = fats
+        self.carbohydrates = carbohydrates
+
+    def __repr__(self):
+        return f'FoodInfo{self.proteins, self.fats, self.carbohydrates}'
+    
+    def __add__(self, other):
+        if isinstance(other, FoodInfo):
+            return FoodInfo(self.proteins + other.proteins, self.fats + other.fats, self.carbohydrates + other.carbohydrates)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            return FoodInfo(self.proteins / other, self.fats / other, self.carbohydrates / other)
+        return NotImplemented
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return FoodInfo(self.proteins * other, self.fats * other, self.carbohydrates * other)
+        return NotImplemented
+    
+    def __floordiv__(self, other):
+        if isinstance(other, (int, float)):
+            return FoodInfo(self.proteins // other, self.fats // other, self.carbohydrates // other)
+        return NotImplemented
+    
+
+
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f'Vector{self.x, self.y}'
+    
+    def __add__(self, other):
+        if isinstance(other, Vector):
+            return Vector(self.x + other.x, self.y + other.y)
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, Vector):
+            return Vector(self.x - other.x, self.y - other.y)
+        return NotImplemented
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return Vector(self.x * other, self.y * other)
+        return NotImplemented
+    
+    def __rmul__(self, other):
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            return Vector(self.x / other, self.y / other)
+        return NotImplemented
+    
+    def __rtruediv__(self, other):
+        return self.__truediv__(other)
+    
+
+class SuperString:
+    def __init__(self, string):
+        self.string = string
+
+    def __str__(self):
+        return self.string
+    
+    def __add__(self, other):
+        if isinstance(other, SuperString):
+            return SuperString(self.string + other.string)
+        return NotImplemented
+    
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return SuperString(self.string * other)
+        return NotImplemented
+    
+    def __rmul__(self, other):
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            return SuperString(self.string[:len(self.string) // other])
+        return NotImplemented
+    
+    def __lshift__(self, other):
+        if isinstance(other, int):
+            return SuperString(self.string[:other])
+        return NotImplemented
+    
+    def __rshift__(self, other):
+        if isinstance(other, int):
+            return SuperString(self.string[other:])
+        return NotImplemented
+    
+
+
