@@ -463,3 +463,125 @@ class Queue:
         if isinstance(other, int):
             return Queue(*islice(self.queue, other, None))
         return NotImplemented
+    
+
+class Calculator:
+    def __call__(self, a, b, op):
+        try:
+            return eval(f'{a} {op} {b}')
+        except ZeroDivisionError:
+            raise ValueError('Деление на ноль невозможно')
+        
+
+class RaiseTo:
+    def __init__(self, degree):
+        self.degree = degree
+
+    def __call__(self, x):
+        return x**self.degree
+    
+
+from random import randint
+
+class Dice:
+    def __init__(self, sides):
+        self.sides = sides
+
+    def __call__(self):
+        return randint(1, self.sides)
+    
+
+class QuadraticPolynomial:
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def __call__(self, x):
+        return self.a*x**2 + self.b*x + self.c
+    
+
+class Strip:
+    def __init__(self, chars):
+        self.chars = chars
+
+    def __call__(self, string):
+        return string.strip(self.chars)
+    
+
+class Filter:
+    def __init__(self, f):
+        if f is None:
+            self.predicate = bool
+        else:
+            self.predicate = f
+
+    def __call__(self, iterable):
+        return list(filter(self.predicate, iterable))
+    
+
+from datetime import date
+
+class DateFormatter:
+    __data = {
+        "ru": r"%d.%m.%Y",
+        "us": r"%m-%d-%Y",
+        "ca": r"%Y-%m-%d",
+        "br": r"%d/%m/%Y",
+        "fr": r"%d.%m.%Y",
+        "pt": r"%d-%m-%Y",
+    }
+
+    def __init__(self, code):
+        self.country_code = DateFormatter.__data[code]
+
+    def __call__(self, d):
+        return d.strftime(self.country_code)
+    
+
+class CountCalls:
+    def __init__(self, f):
+        self.f = f
+        self.calls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.calls += 1
+        return self.f(*args, **kwargs)
+    
+
+from functools import lru_cache
+
+class CachedFunction:
+    def __init__(self, f):
+        self.cache = {}
+        self.f = f
+
+    @lru_cache
+    def __call__(self, *args):
+        res = self.f(*args)
+        self.cache[args] = res
+        return res
+    
+
+class SortKey:
+    def __init__(self, *args):
+        self.args = args
+
+    def __call__(self, x):
+        return [getattr(x, attr) for attr in self.args] 
+    
+
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def __repr__(self):
+        return f'User({self.name}, {self.age})'
+
+users = [User('Gvido', 67), User('Timur', 30), User('Arthur', 20), User('Timur', 45), User('Gvido', 60)]
+
+print(sorted(users, key=SortKey('name')))
+print(sorted(users, key=SortKey('name', 'age')))
+print(sorted(users, key=SortKey('age')))
+print(sorted(users, key=SortKey('age', 'name')))
