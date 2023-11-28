@@ -585,3 +585,101 @@ print(sorted(users, key=SortKey('name')))
 print(sorted(users, key=SortKey('name', 'age')))
 print(sorted(users, key=SortKey('age')))
 print(sorted(users, key=SortKey('age', 'name')))
+
+
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return f'{self.x, self.y}'
+    
+    def __bool__(self):
+        return self.x != 0 or self.y != 0
+    
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**0.5
+
+    def __int__(self):
+        return int(abs(self))
+    
+    def __float__(self):
+        return float(abs(self))
+    
+    def __complex__(self):
+        return complex(self.x, self.y)
+    
+
+class Temperature:
+    def __init__(self, t):
+        self.temperature = t
+
+    def to_fahrenheit(self):
+        return 9/5 * self.temperature + 32
+    
+    @classmethod
+    def from_fahrenheit(cls, t):
+        return cls(5/9 * (t - 32))
+    
+    def __str__(self):
+        return f'{round(self.temperature, 2)}°C'
+    
+    def __bool__(self):
+        return self.temperature > 0
+    
+    def __int__(self):
+        return int(self.temperature)
+    
+    def __float__(self):
+        return float(self.temperature)
+    
+
+from functools import total_ordering
+
+@total_ordering
+class RomanNumeral:
+    _roman = {'M': 1000, 'CM': 900, 'D': 500, 'CD': 400, 'C': 100, 'XC': 90, 'L': 50, 'XL': 40, 'X': 10, 'IX': 9, 'V': 5, 'IV': 4, 'I': 1}
+    _arabic = {1000:'M', 900:'CM', 500:'D', 400:'CD', 100:'C', 90:'XC', 50:'L', 40:'XL', 10:'X', 9:'IX', 5:'V', 4:'IV', 1:'I'}
+
+    def __init__(self, num):
+        self.number = num
+
+    def __str__(self):
+        return self.number
+    
+    def __int__(self):
+        res, s_num = 0, self.number
+        while s_num:
+            for k, v in self._roman.items():
+                if s_num.startswith(k):
+                    res += v
+                    s_num = s_num.replace(k, '', 1)
+                    break
+        return res
+    
+    def __eq__(self, other):
+        if isinstance(other, RomanNumeral):
+            return int(self) == int(other)
+        return NotImplemented
+    
+    def __lt__(self, other):
+        if isinstance(other, RomanNumeral):
+            return int(self) < int(other)
+        return NotImplemented
+    
+    def _to_roman(self, num):
+        res = ''
+        while num:
+            for k, v in self._arabic.items():
+                if num // k != 0:
+                     res += (num // k) * v
+                     num %= k
+                     break
+        return res
+
+    def __add__(self, other):
+        return RomanNumeral(self._to_roman(int(self) + int(other)))
+    
+    def __sub__(self, other):
+        return RomanNumeral(self._to_roman(int(self) - int(other)))
