@@ -776,3 +776,86 @@ class ProtectedObject:
         if name.startswith('_'):
             raise AttributeError('Доступ к защищенному атрибуту невозможен')
         object.__delattr__(self, name)
+
+
+def hash_function(o):
+    o, tmp1, tmp2 = str(o), 0, 0
+    for i in range(len(o) // 2):
+        tmp1 += ord(o[i]) * ord(o[-(i + 1)])
+
+    if len(o) % 2 != 0:
+        tmp1 += ord(o[len(o) // 2])
+
+    for i, v in enumerate(o, 1):
+        tmp2 += (i * ord(v)) * (-1)**(i + 1)
+
+    return (tmp1 * tmp2) % 123456791
+    
+
+def limited_hash(left, right, hash_function=hash):
+    def f(o):
+        h = int(hash_function(o))
+        while h > right:
+            h = left + (h - right - 1)
+        while h < left:
+            h = right - (left - h - 1)
+        return h
+    return f
+
+
+class ColoredPoint:
+    def __init__(self, x, y, color):
+        self._x = x
+        self._y = y
+        self._color = color
+
+    @property
+    def x(self):
+        return self._x
+    
+    @property
+    def y(self):
+        return self._y
+    
+    @property
+    def color(self):
+        return self._color
+    
+    def __repr__(self):
+        return f'{self.__class__.__name__}{self.x, self.y, self.color!r}'
+    
+    def __eq__(self, other):
+        if isinstance(other, ColoredPoint):
+            return self.x == other.x and self.y == other.y and self.color == other.color
+        return NotImplemented
+    
+    def __hash__(self):
+        return hash((self.x, self.y, self.color))
+    
+
+class Row:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            object.__setattr__(self, k, v)
+
+    def __setattr__(self, name, val):
+        if hasattr(self, name):
+            raise AttributeError('Изменение значения атрибута невозможно')
+        raise AttributeError('Установка нового атрибута невозможна')
+        
+    def __delattr__(self, name):
+        raise AttributeError('Удаление атрибута невозможно')
+    
+    def _join(self):
+        return ', '.join(f"{k}={v!r}" for k, v in self.__dict__.items())
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._join()})"
+    
+    def __eq__(self, other):
+        if isinstance(other, Row):
+            return self.__repr__() == other.__repr__()
+        return NotImplemented
+    
+    def __hash__(self):
+        return hash(self.__repr__())
