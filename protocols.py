@@ -1,3 +1,78 @@
+test = list(range(10))
+
+for i in test:
+    print(i)
+
+print()
+
+iterator = iter(test)
+while True:
+    try:
+        print(next(iterator))
+    except StopIteration:
+        break
+
+
+class Point:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}{self.x, self.y, self.z}'
+
+    def __iter__(self):
+        return iter((self.x, self.y, self.z))
+
+
+class DevelopmentTeam:
+    def __init__(self):
+        self._juniors, self._seniors = [], []
+
+    def add_junior(self, *args):
+        self._juniors.extend(args)
+
+    def add_senior(self, *args):
+        self._seniors.extend(args)
+
+    def __iter__(self):
+        yield from ((item, 'junior') for item in self._juniors)
+        yield from ((item, 'senior') for item in self._seniors)
+
+
+class AttrsIterator:
+    def __init__(self, obj):
+        self.values = list(obj.__dict__.items())
+
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        try:
+            return self.values.pop(0)
+        except:
+            raise StopIteration
+    
+
+from itertools import islice
+
+class SkipIterator:
+    def __init__(self, data, n):
+        self.data = iter(islice(data, 0, None, n + 1))
+
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        return next(self.data)
+
+
+from itertools import chain
+
+RandomLooper = chain
+
+
 from itertools import tee
 
 class Peekable:
@@ -270,3 +345,266 @@ class Grouper():
     
     def __contains__(self, key):
         return key in self.items
+    
+
+from os.path import exists
+
+def print_file_content(filename):
+    if not exists(filename):
+        print('Файл не найден')
+        return
+    file = open(filename, encoding='utf-8')
+    print(file.read())
+    file.close()
+
+
+def non_closed_files(files):
+    return [file for file in files if not file.closed]
+    
+
+def log_for(logfile, date_str):
+    with (
+        open(logfile, encoding='utf-8') as input, 
+        open(f'log_for_{date_str}.txt', 'w', encoding='utf-8') as output
+    ):
+        for line in input:
+            if date_str in line:
+                output.write(line.replace(f'{date_str} ', ''))
+
+
+def is_context_manager(obj):
+    return '__enter__' in dir(obj) and '__exit__' in dir(obj)
+
+
+class SuppressAll:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args, **kwargs):
+        return True
+    
+
+class Greeter:
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        print(f'Приветствую, {self.name}!')
+        return self
+
+    def __exit__(self, err_type, err_var, trace):
+        print(f'До встречи, {self.name}!')
+
+
+class Closer:
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __enter__(self):
+        return self.obj
+    
+    def __exit__(self, err_type, err_val, trace):
+        if not hasattr(self.obj, 'close'):
+            print('Незакрываемый объект')
+        else:
+            self.obj.close()
+        return True
+    
+
+class ReadableTextFile:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __enter__(self):
+        self.file = open(self.filename, encoding='utf-8')
+        return map(str.rstrip, self.file)
+    
+    def __exit__(self, err_type, err_val, trace):
+        self.file.close()
+
+
+class Reloopable:
+    def __init__(self, file):
+        self.data = file
+        self.file = file.readlines()
+
+    def __enter__(self):
+        return self.file
+    
+    def __exit__(self, *args, **kwargs):
+        self.data.close()
+
+
+import sys
+
+class UpperPrint:
+    def __enter__(self):
+        self.default_writter = sys.stdout.write
+        sys.stdout.write = lambda x: self.default_writter(x.upper())
+        
+    def __exit__(self, *args, **kwargs):
+        sys.stdout.write = self.default_writter
+
+
+class Suppress:
+    def __init__(self, *args):
+        self.exceptions = args
+        self.exception = None
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, err_type, err_val, trace):
+        if err_type in self.exceptions:
+            self.exception = err_val
+            return True
+        return False
+
+
+class WriteSpy:
+    def __init__(self, file1, file2, to_close=False):
+        self.file1 = file1
+        self.file2 = file2
+        self.to_close = to_close
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, err_type, err_val, trace):
+        if self.to_close:
+            self.close()
+
+    def write(self, text):
+        if self.file1.closed or self.file2.closed or not self.writable():
+            raise ValueError('Файл закрыт или недоступен для записи')
+        self.file1.write(text)
+        self.file2.write(text)
+
+    def close(self):
+        self.file1.close()
+        self.file2.close()
+
+    def writable(self):
+        if self.file1.closed or self.file2.closed:
+            return False
+        return self.file1.writable() and self.file2.writable()
+    
+    def closed(self):
+        return self.file1.closed and self.file2.closed
+
+
+import copy
+
+class Atomic:
+    def __init__(self, data, deep=False):
+        self.copy_data = copy.deepcopy(data) if deep  else copy.copy(data)
+        self.data = data
+
+    def __enter__(self):
+        return self.copy_data
+    
+    def __exit__(self, err_type, err_val, trace):
+        if not err_type:
+            if isinstance(self.data, list):
+                self.data[:] = self.copy_data
+            else:
+                self.data.clear()
+                self.data |= self.copy_data
+        return True
+    
+
+import time
+
+class AdvancedTimer:
+    def __init__(self):
+        self.last_run, self.min, self.max = [None] * 3
+        self.runs = []
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+    
+    def __exit__(self, *args, **kwargs):
+        self.runs.append(time.perf_counter() - self.start)
+        self.max = max(self.runs)
+        self.min = min(self.runs)
+        self.last_run = self.runs[-1]
+
+
+class HtmlTag:
+    level = 0
+
+    def __init__(self, tag, inline=False):
+        self.tag = tag
+        self.end = '' if inline else '\n'
+
+    def print(self, text):
+        print(f'{HtmlTag.level * "  " if self.end else ""}{text}', end=self.end)
+
+    def __enter__(self):
+        print(f'{HtmlTag.level * "  "}<{self.tag}>', end=self.end)
+        HtmlTag.level += 1
+        return self
+    
+    def __exit__(self, *args, **kwargs):
+        HtmlTag.level -= 1
+        print(f'{HtmlTag.level * "  " if self.end else ""}</{self.tag}>')
+
+
+class TreeBuilder:
+    def __init__(self):
+        self.data = []
+        self.cur_data = self.data
+        self.previos = []
+
+    def add(self, obj):
+        self.cur_data.append(obj)
+
+    def structure(self):
+        return self.data
+
+    def __enter__(self):
+        self.previos.append(self.cur_data)
+        self.cur_data = []
+        self.previos[-1].append(self.cur_data)
+
+    def __exit__(self, *args, **kwargs):
+        self.cur_data = self.previos[-1]
+        if not self.cur_data[-1]:
+            self.cur_data.pop()
+        self.previos.pop()
+
+
+tree = TreeBuilder()
+
+tree.add('1st')
+
+with tree:
+    tree.add('2nd')
+    with tree:
+        tree.add('3rd')
+        with tree:
+            tree.add('4th')
+            with tree:
+                tree.add('5th')
+    with tree:
+        pass
+
+tree.add('6th')
+print(tree.structure())
+
+tree = TreeBuilder()
+print(tree.structure())
+
+tree.add('1st')
+print(tree.structure())
+
+with tree:
+    tree.add('2nd')
+    with tree:
+        tree.add('3rd')
+    tree.add('4th')
+    with tree:
+        pass
+        
+print(tree.structure())
