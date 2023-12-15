@@ -608,3 +608,162 @@ with tree:
         pass
         
 print(tree.structure())
+
+
+from contextlib import contextmanager
+
+@contextmanager
+def make_tag(tag):
+    print(tag)
+    yield
+    print(tag)
+
+
+import sys
+
+@contextmanager
+def reversed_print():
+    default_writter = sys.stdout.write
+    sys.stdout.write = lambda x: default_writter(''.join(reversed(x)))
+    yield
+    sys.stdout.write = default_writter
+
+
+@contextmanager
+def safe_write(filename):
+    try:
+        w = open(filename, 'a')
+        r = open(filename, 'r')
+        data = r.read()
+        r.close()
+        yield w
+    except Exception as e:
+        w.close()
+        w = open(filename, 'w')
+        w.write(f'Во время записи в файл было возбуждено исключение {e.__class__.__name__}\n')
+        w.write(data)
+    finally:
+        w.close()
+
+
+@contextmanager
+def safe_open(filename, mode='r'):
+    try:
+        f = open(filename, mode)
+        yield f, None
+        f.close()
+    except BaseException as e:
+        yield None, e
+
+
+from keyword import kwlist
+
+class NonKeyword:
+    def __init__(self, val):
+        self._val = val
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        if self._val in obj.__dict__:
+            return obj.__dict__[self._val]
+        raise AttributeError('Атрибут не найден')
+    
+    def __set__(self, obj, val):
+        if val in kwlist:
+            raise ValueError('Некорректное значение')
+        obj.__dict__[self._val] = val
+
+
+class NonNegativeInteger:
+    def __init__(self, name, default=None):
+        self.name = name
+        self.default = default
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        if self.name in obj.__dict__:
+            return obj.__dict__[self.name]
+        if self.default is None:
+            raise AttributeError('Атрибут не найден')
+        return self.default
+    
+    def __set__(self, obj, val):
+        if isinstance(val, int) and val >= 0:
+            obj.__dict__[self.name] = val
+        else:
+            raise ValueError('Некорректное значение')
+
+
+class MaxCallsException(Exception):
+    pass   
+
+
+class LimitedTakes:
+    def __init__(self, times):
+        self.times = times
+    
+    def __set_name__(self, cls, val):
+        self.val = val
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        if self.val in obj.__dict__:
+            self.times -= 1
+            if self.times < 0:
+                raise MaxCallsException('Превышено количество доступных обращений')
+            return obj.__dict__[self.val]
+        raise AttributeError('Атрибут не найден')
+    
+    def __set__(self, obj, val):
+        obj.__dict__[self.val] = val
+
+
+
+class TypeChecked:
+    def __init__(self, *args):
+        self.types = tuple(args)
+
+    def __set_name__(self, cls, attr):
+        self.attr = attr
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        if self.attr in obj.__dict__:
+            return obj.__dict__[self.attr]
+        raise AttributeError('Атрибут не найден')
+    
+    def __set__(self, obj, val):
+        if isinstance(val, self.types):
+            obj.__dict__[self.attr] = val
+        else:
+            raise TypeError('Некорректное значение')
+        
+
+import random
+
+class RandomNumber:
+    def __init__(self, start, end, cache=False):
+        if cache:
+            self.value = random.randint(start, end)
+        else:
+            self.start = start
+            self.end = end
+
+    def __set_name__(self, cls, attr):
+        self.attr = attr
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        
+        if hasattr(self, 'value'):
+            return self.value
+        return random.randint(self.start, self.end)
+    
+    def __set__(self, obj, val):
+        raise AttributeError('Изменение невозможно')
+        
