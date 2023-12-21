@@ -358,3 +358,248 @@ class MutableString(UserString):
 
     def __delitem__(self, key):
         self.data = self.data[:key] + self.data[key + 1:]
+
+
+from abc import ABC, abstractmethod
+
+class ChessPiece(ABC):
+    _transform = {j: i for i, j in enumerate('abcdefgh')}
+
+    @classmethod
+    def transform(cls, x, y):
+        return cls._transform[x], 8 - y 
+
+    def __init__(self, x, y):
+        self.horizontal, self.vertical = x, y
+        self.x, self.y = self.__class__.transform(x, y)
+
+    @abstractmethod
+    def can_move(self):
+        pass
+
+class King(ChessPiece):
+    def can_move(self, x, y):
+        x, y = self.__class__.transform(x, y)
+        check_first = abs(self.x - x) == 1 and \
+                      abs(self.y - y) in (0, 1)
+        check_second = abs(self.x - y) == 1 and \
+                      abs(self.y - x) in (0, 1)
+        return any([check_first, check_second])
+    
+class Knight(ChessPiece):
+    def can_move(self, x, y):
+        x, y = self.__class__.transform(x, y)
+        check_first = abs(self.x - x) == 1 and \
+                      abs(self.y - y) == 2
+        check_second = abs(self.x - x) == 2 and \
+                      abs(self.y - y) == 1
+        return any([check_first, check_second])
+
+
+from abc import ABC, abstractmethod
+
+class Validator(ABC):
+    def __set_name__(self, cls, attr):
+        self.attr = attr
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        if self.attr in obj.__dict__:
+            return obj.__dict__[self.attr]
+        return AttributeError('Атрибут не найден')
+    
+    def __set__(self, obj, val):
+        if self.validate(val):
+            obj.__dict__[self.attr] = val
+
+    @abstractmethod
+    def validate(self, obj):
+        pass
+
+class Number(Validator):
+    def __init__(self, minvalue=None, maxvalue=None):
+        self.minvalue = minvalue
+        self.maxvalue = maxvalue
+
+    def validate(self, obj):
+        if not isinstance(obj, (int, float)):
+            raise TypeError('Устанавливаемое значение должно быть числом')
+        if not self.minvalue is None and obj < self.minvalue:
+            raise ValueError(f'Устанавливаемое число должно быть больше или равно {self.minvalue}')
+        if not self.maxvalue is None and obj > self.maxvalue:
+            raise ValueError(f'Устанавливаемое число должно быть меньше или равно {self.maxvalue}')
+        return True
+
+class String(Validator):
+    def __init__(self, minsize=None, maxsize=None, predicate=None):
+        self.minsize = minsize
+        self.maxsize = maxsize
+        self.predicate = predicate
+
+    def validate(self, obj):
+        if not isinstance(obj, str):
+            raise TypeError('Устанавливаемое значение должно быть строкой')
+        if not self.minsize is None and len(obj) < self.minsize:
+            raise ValueError(f'Длина устанавливаемой строки должна быть больше или равна {self.minsize}')
+        if not self.maxsize is None and len(obj) > self.maxsize:
+            raise ValueError(f'Длина устанавливаемой строки должна быть меньше или равна {self.maxsize}')
+        if not self.predicate is None and not self.predicate(obj):
+            raise ValueError('Устанавливаемая строка не удовлетворяет дополнительным условиям')
+        return True
+    
+
+from collections.abc import Iterable, Iterator
+
+def is_iterator(obj):
+    return isinstance(obj, Iterator)
+
+def is_iterable(obj):
+    return isinstance(obj, Iterable)
+
+
+from collections.abc import Sequence
+
+class CustomRange(Sequence):
+    def __init__(self, *args):
+        self.seq = []
+        for i in args:
+            self.seq.extend(
+                [i] if type(i) == int
+                else range(int(i.split('-')[0]), int(i.split('-')[1]) + 1)
+            )
+
+    def __len__(self):
+        return len(self.seq)
+    
+    def __getitem__(self, key):
+        return self.seq[key]
+        
+
+class BitArray(Sequence):
+    def __init__(self, o=[]):
+        self.seq = []
+        self.seq.extend(o)
+
+    def __len__(self):
+        return len(self.seq)
+    
+    def __getitem__(self, key):
+        return self.seq[key]
+    
+    def __repr__(self):
+        return f'{self.seq!r}'
+    
+    def __invert__(self):
+        return BitArray(map(lambda x: 1 - x, self.seq))
+    
+    def __or__(self, other):
+        if isinstance(other, BitArray) and len(self) == len(other):
+            return BitArray([int(any([i, j])) for i, j in zip(self.seq, other.seq)])
+        return NotImplemented
+    
+    def __and__(self, other):
+        if isinstance(other, BitArray) and len(self) == len(other):
+            return BitArray([int(all([i, j])) for i, j in zip(self.seq, other.seq)])
+        return NotImplemented
+            
+
+class DNA(Sequence):
+    base = {
+        'A': 'T',
+        'T': 'A',
+        'G': 'C',
+        'C': 'G',
+    }
+
+    def __init__(self, chain):
+        self.chain = chain
+
+    def __len__(self):
+        return len(self.chain)
+    
+    def __str__(self):
+        return self.chain
+    
+    def __getitem__(self, key):
+        return self.chain[key], __class__.base[self.chain[key]]
+    
+    def __contains__(self, value):
+        return value in self.chain
+    
+    def __eq__(self, other):
+        if isinstance(other, __class__):
+            return self.chain == other.chain
+        return NotImplemented
+    
+    def __add__(self, other):
+        if isinstance(other, __class__):
+            return __class__(self.chain + other.chain)
+        return NotImplemented
+    
+
+from collections.abc import MutableSequence
+
+class SortedList(MutableSequence):
+    def __init__(self, o=[]):
+        self.seq = []
+        self.seq.extend(o)
+        self.seq.sort()
+        
+    def add(self, item):
+        self.seq.append(item)
+        self.seq.sort()
+
+    def discard(self, item):
+        while self.seq.count(item):
+            self.seq.remove(item)
+        self.seq.sort()
+
+    def update(self, other):
+        self.seq.extend(other)
+        self.seq.sort()
+    
+    def insert(self, item, ind):
+        raise NotImplementedError
+
+    def __reversed__(self):
+        raise NotImplementedError
+    
+    def __repr__(self):
+        return f'{__class__.__name__}({self.seq!r})'
+    
+    def __len__(self):
+        return len(self.seq)
+    
+    def __getitem__(self, key):
+        return self.seq[key]
+    
+    def __delitem__(self, key):
+        del self.seq[key]
+
+    def __setitem__(self, key, val):
+        raise NotImplementedError
+    
+    def __add__(self, other):
+        if isinstance(other, __class__):
+            return __class__(self.seq + other.seq)
+        return NotImplemented
+    
+    def __iadd__(self, other):
+        if isinstance(other, __class__):
+            self.seq += other.seq
+            self.seq.sort()
+            return self
+        return NotImplemented
+    
+    def __mul__(self, n):
+        if isinstance(n, int):
+            return __class__(self.seq * n)
+        return NotImplemented
+    
+    def __imul__(self, n):
+        if isinstance(n, int):
+            self.seq *= n
+            self.seq.sort()
+            return self
+        return NotImplemented
