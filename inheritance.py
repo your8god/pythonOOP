@@ -695,3 +695,79 @@ class MROHelper:
     @staticmethod
     def index_by_class(child, parent):
         return child.__mro__.index(parent)
+    
+
+from datetime import date
+
+class MyDate:
+    def __init__(self, year, month, day):
+        self.data = date(year, month, day)
+
+    def iso_format(self):
+        return self.data.isoformat()
+
+class USADate(MyDate):
+    def format(self):
+        return self.data.strftime('%m-%d-%Y')
+    
+class ItalianDate(MyDate):
+    def format(self):
+        return self.data.strftime('%d/%m/%Y')
+    
+
+from abc import ABC, abstractmethod 
+
+class Stat(ABC):
+    def __init__(self, iterable=[]):
+        self.stat = []
+        self.stat.extend(iterable)
+
+    def add(self, item):
+        self.stat.append(item)
+
+    def clear(self):
+        self.stat.clear()
+
+    @abstractmethod
+    def result(self):
+        raise NotImplemented
+
+class MinStat(Stat):
+    def result(self):
+        return min(self.stat, default=None)
+    
+class MaxStat(Stat):
+    def result(self):
+        return max(self.stat, default=None)
+
+class AverageStat(Stat):
+    def result(self):
+        return None if not self.stat else sum(self.stat) / len(self.stat)
+    
+
+class Paragraph:
+    def __init__(self, n):
+        self.length = n
+        self.text = []
+
+    def add(self, text):
+        text = ' '.join(self.text) + ' ' + text
+        self.text.clear()
+        text = text.split()
+        while text:
+            sentense = ''
+            while text and len(sentense + ' ' + text[0]) <= self.length:
+                sentense += ' ' + text[0]
+                text.pop(0)
+            self.text.append(sentense.lstrip())
+
+class LeftParagraph(Paragraph):
+    def end(self):
+        print(*self.text, sep='\n')
+        self.text.clear()
+
+class RightParagraph(Paragraph):
+    def end(self):
+        for i in self.text:
+            print(f'{i:>{self.length}}')
+        self.text.clear()
