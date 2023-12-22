@@ -603,3 +603,95 @@ class SortedList(MutableSequence):
             self.seq.sort()
             return self
         return NotImplemented
+    
+
+class A:
+    pass
+
+class B(A):
+    pass
+
+class C(A):
+    pass
+
+class D(A):
+    pass
+
+class E(B, D):
+    pass
+
+
+class H:
+    pass
+
+class D(H):
+    pass
+
+class E(H):
+    pass
+
+class F(H):
+    pass
+
+class G(H):
+    pass
+
+class B(D, E):
+    pass
+
+class C(F, G):
+    pass
+
+class A(B, C):
+    pass
+
+
+def get_method_owner(cls, method):
+    for item in cls.__mro__:
+        if method in item.__dict__:
+            return item
+        
+
+from abc import ABC, abstractmethod
+
+class Person(ABC):
+    def __init__(self, mood='neutral'):
+        self.mood = mood
+
+    @abstractmethod
+    def greet(self):
+        raise NotImplementedError
+
+class Father(Person):
+    def greet(self):
+        return 'Hello!'
+    
+    def be_strict(self):
+        self.mood = 'strict'
+
+class Mother(Person):
+    def greet(self):
+        return 'Hi, honey!'
+    
+    def be_kind(self):
+        self.mood = 'kind'
+
+class Daughter(Mother, Father):
+    pass
+
+class Son(Father, Mother):
+    pass
+
+
+class MROHelper:
+    @staticmethod
+    def len(cls):
+        return len(cls.__mro__)
+    
+    @staticmethod
+    def class_by_index(cls, n=0):
+        return cls.__mro__[n]
+    
+    @staticmethod
+    def index_by_class(child, parent):
+        return child.__mro__.index(parent)
