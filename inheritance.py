@@ -771,3 +771,138 @@ class RightParagraph(Paragraph):
         for i in self.text:
             print(f'{i:>{self.length}}')
         self.text.clear()
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return f'{self.x, self.y}'
+    
+class Circle:
+    def __init__(self, radius, center):
+        self.radius = radius
+        self.center = center
+
+    def __str__(self):
+        return f'{self.center}, r = {self.radius}'
+    
+
+class Item:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+    def __str__(self):
+        return f'{self.name}, {self.price}$'
+    
+    def __eq__(self, other):
+        return self.name == other
+    
+class ShoppingCart(list):
+    add = list.append
+
+    def total(self):
+        return 0 if not self else sum(i.price for i in self)
+    
+    def remove(self, item):
+        while self.count(item):
+            super().remove(item)
+
+    def __str__(self):
+        return '\n'.join(str(i) for i in self)
+    
+
+from random import shuffle
+from itertools import product
+
+class Card:
+    def __init__(self, suit, rank):
+        self.suit = suit
+        self.rank = rank
+
+    def __str__(self):
+        return f'{self.suit}{self.rank}'
+    
+class Deck(list):
+    __suits = ("♣", "♢", "♡", "♠")
+    __ranks = ("2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A")
+    def __init__(self):
+        super().__init__(Card(i, j) for i, j in product(self.__suits, self.__ranks))
+
+    def shuffle(self):
+        if len(self) != 52:
+            raise ValueError('Перемешивать можно только полную колоду')
+        shuffle(self)
+
+    def deal(self):
+        if not len(self):
+            raise ValueError('Все карты разыграны')
+        return self.pop()
+    
+    def __str__(self):
+        return f'Карт в колоде: {len(self)}'
+    
+
+from collections import deque
+
+class Queue:
+    def __init__(self, items=[]):
+        self.queue = deque(items)
+
+    def add(self, item):
+        self.queue = deque([i for i in self.queue if i[0] != item[0]])
+        self.queue.append(item)
+
+    def pop(self):
+        if not len(self.queue):
+            raise KeyError('Очередь пуста')
+        return self.queue.popleft()
+    
+    def __str__(self):
+        return f'{str(self.queue).replace("deque", __class__.__name__)}'
+    
+    def __len__(self):
+        return len(self.queue)
+    
+
+from datetime import timedelta, datetime
+
+class Lecture:
+    def __init__(self, topic, start_time, duration):
+        self.topec = topic
+        self.duration = datetime.strptime(duration, '%H:%M')
+        self.start_time = datetime.strptime(start_time, '%H:%M')
+        self.end_time = timedelta(hours=self.duration.hour, minutes=self.duration.minute) + self.start_time
+
+    def __eq__(self, other):
+        if not isinstance(other, __class__):
+            return NotImplemented
+        return self.start_time >= other.end_time or self.end_time <= other.start_time
+
+class Conference:
+    def __init__(self):
+        self.list = []
+
+    def add(self, topic):
+        if all([i == topic for i in self.list]):
+            self.list.append(topic)
+        else:
+            raise ValueError('Провести выступление в это время невозможно')
+        
+    def total(self):
+        res = sum([timedelta(hours=i.duration.hour, minutes=i.duration.minute) for i in self.list],
+                    start=datetime.strptime('00:00', '%H:%M'))
+        return res.strftime('%H:%M')
+    
+    def longest_lecture(self):
+        return max([i.duration for i in self.list]).strftime('%H:%M')
+    
+    def longest_break(self):
+        self.list.sort(key=lambda x: x.start_time)
+        breaks = []
+        for i in range(1, len(self.list)):
+            breaks.append(self.list[i].start_time - self.list[i-1].end_time)
+        return max([i.duration for i in breaks]).strftime('%H:%M')
