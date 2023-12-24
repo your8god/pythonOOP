@@ -101,3 +101,30 @@ class NextDate:
                 if Weekday(i) is self.weekday:
                     return cnt
                 cnt += 1
+
+
+from enum import Flag, auto
+
+class OrderStatus(Flag):
+    ORDER_PLACED = auto()
+    PAYMENT_RECEIVED = auto()
+    SHIPPING_COMPLETE = auto()
+
+
+class MovieGenres(Flag):
+    ACTION = auto()
+    COMEDY = auto()
+    DRAMA = auto()
+    FANTASY = auto()
+    HORROR = auto()
+
+class Movie:
+    def __init__(self, name, genres):
+        self.name = name
+        self.genres = genres
+
+    def __str__(self):
+        return self.name
+    
+    def in_genre(self, genre):
+        return genre in self.genres
