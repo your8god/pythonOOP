@@ -128,3 +128,98 @@ class Movie:
     
     def in_genre(self, genre):
         return genre in self.genres
+    
+
+import functools
+
+class reverse_args:
+    def __init__(self, f):
+        functools.update_wrapper(self, f)
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        return self.f(*reversed(args), **kwargs)
+    
+
+class MaxCallsException(Exception):
+    pass
+
+class limited_calls:
+    def __init__(self, n):
+        self.n = n
+
+    def __call__(self, f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            self.n -= 1
+            if self.n < 0:
+                raise MaxCallsException('Превышено допустимое количество вызовов')
+            return f(*args, **kwargs)
+        return wrapper
+    
+
+class takes_numbers:
+    def __init__(self, f):
+        function.update_wrapper(self, f)
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        for i in args + tuple(kwargs.values()):
+            if not isinstance(i, (int, float)):
+                raise TypeError('Аргументы должны принадлежать типам int или float')
+            
+        return self.f(*args, **kwargs)
+    
+
+class returns:
+    def __init__(self, datatype):
+        self.datatype = datatype
+
+    def __call__(self, f):
+        @function.wraps(f)
+        def wrapper(*args, **kwargs):
+            res = f(*args, **kwargs)
+            if isinstance(res, self.datatype):
+                return res
+            raise TypeError
+        return wrapper
+    
+
+class exception_decorator:
+    def __init__(self, f):
+        functools.update_wrapper(self, f)
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        try:
+            res = self.f(*args, **kwargs)
+            return res, None
+        except Exception as e:
+            return None, e.__class__
+        
+
+class ignore_exception:
+    def __init__(self, *args):
+        self.exceptions = args
+
+    def __call__(self, f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except self.exceptions as e:
+                print(f'Исключение {e.__class__.__name__} обработано')
+        return wrapper
+    
+
+class type_check:
+    def __init__(self, types):
+        self.types = types
+
+    def __call__(self, f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            if all([type(i) == j for i, j in zip(args, self.types)]):
+                return f(*args, **kwargs)
+            raise TypeError
+        return wrapper
