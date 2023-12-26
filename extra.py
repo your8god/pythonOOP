@@ -223,3 +223,211 @@ class type_check:
                 return f(*args, **kwargs)
             raise TypeError
         return wrapper
+    
+
+def track_instances(cls):
+    cls.instances = []
+    my_init = cls.__init__
+
+    def init(self, *args, **kwargs):
+        my_init(self, *args, **kwargs)
+        cls.instances.append(self)
+
+    cls.__init__ = init
+    return cls
+
+
+def add_attr_to_class(**kwargs):
+    def decorator(cls):
+        for k, v in kwargs.items():
+            setattr(cls, k, v)
+        return cls
+    return decorator
+
+
+import json
+
+def jsonattr(filename):
+    f = open(filename)
+    d = json.load(f)
+    f.close()
+    def wrapper(cls):
+        for k, v in d.items():
+            setattr(cls, k, v)
+        return cls
+    return wrapper
+
+with open('test.json', 'w') as file:
+    file.write('{"x": 1, "y": 2}')
+
+@jsonattr('test.json')
+class MyClass:
+    pass
+    
+print(MyClass.x)
+print(MyClass.y)
+
+
+
+def singleton(cls):
+    my_new = cls.__new__
+    cls._obj = None
+
+    @functools.wraps(my_new)
+    def new(cls, *args, **kwargs):
+        if cls._obj is None:
+            cls._obj = my_new(cls)
+        return cls._obj
+    cls.__new__ = new
+    return cls
+
+@singleton
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return f'Person({self.name!r})'
+
+
+instances = [Person('John Doe') for _ in range(1000)]
+person = Person('Doe John')
+print(person)
+print(instances[389])
+print(all(instance is person for instance in instances))
+
+
+import re
+
+def to_snake(string):
+    return re.sub(r'([a-z])([A-Z])', r'\1_\2', string).lower()
+
+def snake_case(attrs=False):
+    def wrapper(cls):
+        self_dict = dict(cls.__dict__)
+        for k, v in self_dict.items():
+            if k.startswith('__') and k.endswith('__'):
+                continue
+            if not callable(v) and not attrs:
+                continue
+            delattr(cls, k)
+            setattr(cls, to_snake(k), v)
+        return cls
+    return wrapper
+
+@snake_case(attrs=True)
+class MyClass:
+    FirstAttr = 1
+    superSecondAttr = 2
+
+print(MyClass.first_attr)
+print(MyClass.super_second_attr)
+
+
+def auto_repr(args, kwargs):
+    def wrapper(cls):
+        @functools.wraps(cls.__repr__)
+        def repr(self):
+            my_args = ', '.join(f"{v!r}" for k, v in self.__dict__.items() if k in args)
+            my_kwargs = ', '.join(f"{k}={v!r}" for k, v in self.__dict__.items() if k in kwargs)
+            return f"{cls.__name__}({my_args}{', ' if my_args and my_kwargs else ''}{my_kwargs})"
+        cls.__repr__ = repr
+        return cls
+    return wrapper
+
+
+
+def limiter(limit, unique, lookup):
+    def wrapper(cls):
+        cls.instances = []
+        def creator(*args, **kwargs):
+            item = cls(*args, **kwargs)
+            for i in cls.instances:
+                if getattr(i, unique) == getattr(item, unique):
+                    return i
+                
+            if len(cls.instances) >= limit:
+                if lookup == 'FIRST':
+                    return cls.instances[0]
+                else:
+                    return cls.instances[-1]
+
+            cls.instances.append(item)
+            return item
+        return creator
+    return wrapper
+
+print()
+
+@limiter(2, 'ID', 'FIRST')
+class MyClass:
+    def __init__(self, ID, value):
+        self.ID = ID
+        self.value = value
+
+
+obj1 = MyClass(1, 5)          # создается экземпляр класса с идентификатором 1
+obj2 = MyClass(2, 8)          # создается экземпляр класса с идентификатором 2
+
+obj3 = MyClass(1, 20)         # возвращается obj1, так как экземпляр с идентификатором 1 уже есть
+obj4 = MyClass(3, 0)          # превышено ограничение limit, возвращается первый созданный экземпляр
+
+print(obj3 is obj1, obj3.value)
+print(obj4.value)
+
+
+from dataclasses import dataclass, field
+
+@dataclass
+class City:
+    name: str
+    population: int
+    founded: int
+
+
+@dataclass(frozen=True)
+class MusicAlbum:
+    title: str
+    artist: str
+    genre: str = field(repr=False, compare=False)
+    year: int = field(repr=False)
+
+
+@dataclass
+class Point:
+    x: float = 0.0
+    y: float = 0.0
+    quadrant: int = 0
+
+    def __post_init__(self):
+        if self.x == 0.0 or self.y == 0.0:
+            self.quadrant = 0
+        elif self.x > 0 and self.y < 0:
+            self.quadrant = 4
+        elif self.x < 0 and self.y > 0:
+            self.quadrant = 2
+        elif self.x > 0 and self.y > 0:
+            self.quadrant = 1
+        else:
+            self.quadrant = 3
+
+    def symmetric_x(self):
+        return Point(self.x, self.y * -1)
+    
+    def symmetric_y(self):
+        return Point(self.x * -1, self.y)
+    
+
+@dataclass(order=True)
+class FootballPlayer:
+    name: str = field(compare=False)
+    surname: str = field(compare=False)
+    value: int = field(repr=False)
+
+@dataclass
+class FootballTeam:
+    name: str
+    players: list = field(default_factory=list, repr=False, compare=False)
+
+    def add_players(self, *args):
+        self.players.extend(args)
